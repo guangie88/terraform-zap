@@ -1,0 +1,17 @@
+[package]
+name = "terraform-zap-ignore-lib"
+version = "0.1.0"
+authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
+description = "Provides ignore implementation to terraform-zap"
+repository = "https://github.com/guangie88/terraform-zap"
+license-file = "../LICENSE"
+
+[dependencies]
+serde = "1"
+serde_derive = "1"
+
+[dev-dependencies]
+toml = "0.4.6"
+
+[lib]
+path = "src/lib.rs"
