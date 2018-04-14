@@ -1,0 +1,14 @@
+FROM guangie88/rustfmt-clippy:1.27.0-nightly
+
+WORKDIR /app
+COPY ./Cargo.toml ./Cargo.lock ./rustfmt.toml ./
+COPY ./ignore-lib/Cargo.toml ./ignore-lib/rustfmt.toml ./ignore-lib/
+
+RUN set -x \
+    && cargo fetch --locked -v
+
+COPY ./src/ ./src/
+COPY ./ignore-lib/src/ ./ignore-lib/src/
+
+RUN cargo clippy --all \
+    && cargo test --all --no-run

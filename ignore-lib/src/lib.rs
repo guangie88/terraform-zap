@@ -10,11 +10,16 @@ extern crate serde;
 extern crate serde_derive;
 
 /// Root structure to hold the ignore method type
+/// Using #[serde(untagged)] at the moment due to issue
+/// <https://github.com/alexcrichton/toml-rs/issues/225>
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
 pub enum Ignore {
-    /// Ignore by grep -v method
-    GrepInvert(Vec<String>),
+    /// Variant to ignore by grep -v method
+    GrepInvert {
+        /// Array of values to ignore
+        grep_invert: Vec<String>,
+    },
 }
 
 #[cfg(test)]
@@ -24,14 +29,44 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_grep_invert_1() {
-        let content = r#"
+    fn test_grep_invert_valid_1() {
+        const CONTENT: &str = r#"
+            grep_invert = []
+        "#;
+
+        let _: Ignore = toml::from_str(CONTENT).unwrap();
+    }
+
+    #[test]
+    fn test_grep_invert_valid_2() {
+        const CONTENT: &str = r#"
             grep_invert = [
-                hello,
-                world,
+                "hello",
+                "world",
             ]
         "#;
 
-        let _: Ignore = toml::from_str(content).unwrap();
+        let _: Ignore = toml::from_str(CONTENT).unwrap();
+    }
+
+    #[test]
+    fn test_invalid_1() {
+        const CONTENT: &str = "";
+        let parsed: Result<Ignore, _> = toml::from_str(CONTENT);
+        assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn test_invalid_2() {
+        const CONTENT: &str = "[]";
+        let parsed: Result<Ignore, _> = toml::from_str(CONTENT);
+        assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn test_invalid_3() {
+        const CONTENT: &str = r#"["hello", "world"]"#;
+        let parsed: Result<Ignore, _> = toml::from_str(CONTENT);
+        assert!(parsed.is_err());
     }
 }

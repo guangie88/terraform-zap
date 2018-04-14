@@ -1,0 +1,59 @@
+language: rust
+
+matrix:
+  include:
+    - services: docker
+      env:
+        - LINT=true
+    - services: docker
+      env:
+        - COVERAGE=true
+    - rust: stable
+      sudo: false
+      env:
+        - DOC=true
+    - rust: stable
+      sudo: false
+    - rust: beta
+      sudo: false
+    - rust: nightly
+      sudo: false
+  fast_finish: true
+
+before_script:
+  - set -e
+  - |
+    if [ "$LINT" = "true" ]; then
+      docker-compose -f docker-compose.lint-test.yml build lint-test
+    elif [ "$COVERAGE" = "true" ]; then
+      echo "Coverage does not deal with before_script"
+    elif [ "$DOC" = "true" ]; then
+      echo "Doc does not deal with before_script"
+    else
+      cargo test --all --no-run --verbose
+    fi
+
+script:
+  - |
+    if [ "$LINT" = "true" ]; then
+      docker-compose -f docker-compose.lint-test.yml run lint-test
+    elif [ "$COVERAGE" = "true" ]; then
+      echo "Coverage does not deal with script"
+    elif [ "$DOC" = "true" ]; then
+      cargo doc --all
+    else
+      cargo test --all --verbose
+    fi
+
+after_success:
+  - |
+    if [ "$COVERAGE" = "true" ]; then
+      docker run --security-opt seccomp=unconfined -v "$PWD:/volume" \
+        guangie88/ubuntu-cargo-tarpaulin:xenial-stable "
+          cargo tarpaulin --all --out Xml \
+          && bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN"
+    fi
+
+branches:
+  only:
+    - master
