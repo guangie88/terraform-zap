@@ -5,15 +5,26 @@ authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
 description = "Script wrapper to perform finer terraform destroy"
 repository = "https://github.com/guangie88/terraform-zap"
 readme = "README.md"
-license-file = "LICENSE"
+categories = ["command-line-utilities"]
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "guangie88/terraform-zap" }
+codecov = { repository = "guangie88/terraform-zap" }
 
 [dependencies]
+derive_more = "=0.10.0"
 failure = "=0.1.1"
+is_executable = "=0.1.0"
 structopt = "=0.2.7"
 structopt-derive = "=0.2.7"
+subprocess = "=0.1.12"
 terraform-zap-ignore-lib = { path = "ignore-lib", version = "0.1.0" }
 toml = "=0.4.6"
 which = "=2.0.0"
+whiteread = "=0.4.3"
+vlog = "=0.1.1"
+yansi = "=0.4.0"
 
 [workspace]
 members = [

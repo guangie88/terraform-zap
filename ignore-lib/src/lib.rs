@@ -15,10 +15,10 @@ extern crate serde_derive;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Ignore {
-    /// Variant to ignore by grep -v method
-    GrepInvert {
-        /// Array of values to ignore
-        grep_invert: Vec<String>,
+    /// Variant to ignore by exact string match
+    Exact {
+        /// Array of full resource names to ignore
+        exact: Vec<String>,
     },
 }
 
@@ -31,7 +31,7 @@ mod tests {
     #[test]
     fn test_grep_invert_valid_1() {
         const CONTENT: &str = r#"
-            grep_invert = []
+            exact = []
         "#;
 
         let _: Ignore = toml::from_str(CONTENT).unwrap();
@@ -40,7 +40,7 @@ mod tests {
     #[test]
     fn test_grep_invert_valid_2() {
         const CONTENT: &str = r#"
-            grep_invert = [
+            exact = [
                 "hello",
                 "world",
             ]
