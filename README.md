@@ -34,13 +34,20 @@ commands in order to skip the above resources to possibly resolve the
 
 ## How to install
 
-### Direct download for Linux (64-bit)
+### Direct download for Linux (AMD64)
 
-The most straightforward way is to visit
-<https://github.com/guangie88/terraform-zap/releases>
-and download the latest version of statically built binary in the zip asset. The
-zip file is named as `terraform-zap-vX.Y.Z.zip`, and is currently meant only for
-any Linux 64-bit machine.
+The easiest way is to run the install script using shell as shown below.
+
+```bash
+curl -sSf https://raw.githubusercontent.com/guangie88/terraform-zap/master/install-index.sh | sudo sh
+```
+
+You will need to run as `root`, or run via `sudo`, since the script will place
+`terraform-zap` binary file into `/usr/local/bin/`.
+
+You may also choose to visit
+[releases](https://github.com/guangie88/terraform-zap/releases)
+and download the latest version of statically built binary in the zip asset.
 
 ### Via `cargo install`
 
