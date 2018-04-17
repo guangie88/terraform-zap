@@ -22,8 +22,8 @@ changed to `.tfzignore`.
 
 ```toml
 exact = [
-    "important_database.xxx",
-    "important_role.xxx",
+    "postgresql_database.some_db_name",
+    "postgresql_role.some_role_name",
 ]
 ```
 
@@ -94,3 +94,17 @@ as intended.
 Run `cargo build --all --release`. This builds all the associated libraries
 and the executable. The executable will be built in
 `target/release/terraform-zap`.
+
+## Contributions
+
+Pull requests are welcome to facilitate improvements to the repository.
+
+Thanks to [`@chrissng`](https://github.com/chrissng) for providing the original
+`terraform destroy` command that only targets non-protected resources. The
+original command line is as follow:
+
+```bash
+TARGETS=$(for I in $(terraform state list | grep -v postgresql); \
+    do echo " -target $I"; done); \
+    echo terraform destroy $TARGETS
+```
