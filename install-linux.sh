@@ -13,7 +13,7 @@ LATEST_TAG=$(curl -sSf "https://api.github.com/repos/$REPO_USERNAME/$REPO_NAME/r
 
 BINARY_FILE=terraform-zap
 ZIP_SUFFIX=`uname -s | tr '[:upper:]' '[:lower:]'`-`uname -i`
-ZIP_FILE=$BINARY_NAME-$TRAVIS_TAG-$ZIP_SUFFIX.zip
+ZIP_FILE=$BINARY_FILE-$LATEST_TAG-$ZIP_SUFFIX.zip
 
 BIN_DIR=/usr/local/bin
 
