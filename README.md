@@ -39,7 +39,7 @@ commands in order to skip the above resources to possibly resolve the
 The easiest way is to run the install script using shell as shown below.
 
 ```bash
-curl -sSf https://raw.githubusercontent.com/guangie88/terraform-zap/master/install-index.sh | sudo sh
+curl -sSf https://raw.githubusercontent.com/guangie88/terraform-zap/master/install-linux.sh | sudo sh
 ```
 
 You will need to run as `root`, or run via `sudo`, since the script will place
