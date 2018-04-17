@@ -34,7 +34,7 @@ commands in order to skip the above resources to possibly resolve the
 
 ## How to install
 
-### Direct download for Linux (AMD64)
+### Direct download for Linux x86_64
 
 The easiest way is to run the install script using shell as shown below.
 

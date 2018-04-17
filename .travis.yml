@@ -71,13 +71,14 @@ after_success:
   elif [ "$ARTIFACT" = "true" ] && [ -n "$TRAVIS_TAG" ]; then
     # upload binary artifact when this is a new tag
     # this needs to be jq processed to extract out the `id` value
-    export TAG_ID=$(curl -X GET \
+    TAG_ID=$(curl -X GET \
       -H "Authorization: token $GITHUB_TOKEN" \
       "https://api.github.com/repos/$REPO_USERNAME/$REPO_NAME/releases" \
       | jq -r '.[] | select(.tag_name == "'$TRAVIS_TAG'").id')
 
     # formulate zip
-    export ZIP_FILE=$BINARY_NAME-$TRAVIS_TAG.zip
+    ZIP_SUFFIX=`uname -s | tr '[:upper:]' '[:lower:]'`-`uname -i`
+    ZIP_FILE=$BINARY_NAME-$TRAVIS_TAG-$ZIP_SUFFIX.zip
     zip -j $ZIP_FILE "$ARTIFACTS_DIR/$BINARY_NAME"
 
     curl -X POST \

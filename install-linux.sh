@@ -12,7 +12,9 @@ LATEST_TAG=$(curl -sSf "https://api.github.com/repos/$REPO_USERNAME/$REPO_NAME/r
     | sed -n 's/.*"\(v.*\)".*/\1/p')
 
 BINARY_FILE=terraform-zap
-ZIP_FILE=$BINARY_FILE-$LATEST_TAG.zip
+ZIP_SUFFIX=`uname -s | tr '[:upper:]' '[:lower:]'`-`uname -i`
+ZIP_FILE=$BINARY_NAME-$TRAVIS_TAG-$ZIP_SUFFIX.zip
+
 BIN_DIR=/usr/local/bin
 
 # unzip cannot work on Unix pipe
