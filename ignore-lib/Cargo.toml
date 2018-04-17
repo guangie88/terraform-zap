@@ -1,6 +1,6 @@
 [package]
 name = "terraform-zap-ignore-lib"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
 description = "Provides ignore implementation to terraform-zap"
 documentation = "https://docs.rs/terraform-zap-ignore-lib"

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 )]
 pub struct Config {
     #[structopt(short = "c", long = "cmdpath", parse(from_os_str))]
-    /// Path to `terraform` command
+    /// Path to `terraform` command (optional)
     pub tf_cmd: Option<PathBuf>,
 
     #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
