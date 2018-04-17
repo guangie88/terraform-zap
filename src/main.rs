@@ -3,7 +3,15 @@
 
 //! # terraform-zap
 //!
-//! Script wrapper to perform finer terraform destroy
+//! Script wrapper to perform finer terraform destroy. This means that
+//! `terraform` must still be installed and residing within `PATH` environment
+//! variable.
+//!
+//! Currently if any of the `.tf` files contain `prevent_destroy = true` for any
+//! of the resources, `terraform destroy` will fail and there is no flag to
+//! force `terraform` to skip all resources. This script wrapper helps to
+//! alleviate the issue by parsing `.tfzignore` file in the current working
+//! directory, where the `.tf` files are residing in.
 
 #[macro_use]
 extern crate derive_more;
@@ -41,7 +49,7 @@ use terraform_zap_ignore_lib::Ignore;
 use yansi::Paint;
 
 const TF_CMD: &str = "terraform";
-const TFIGNORE_FILE: &str = ".tfignore";
+const TFZIGNORE_FILE: &str = ".tfzignore";
 
 fn find_ignore() -> Result<Ignore> {
     let roots = {
@@ -60,10 +68,10 @@ fn find_ignore() -> Result<Ignore> {
     let ignore_path = roots
         .into_iter()
         .map(|mut root| {
-            root.push(PathBuf::from(TFIGNORE_FILE));
+            root.push(PathBuf::from(TFZIGNORE_FILE));
             root
         })
-        .inspect(|root| v2!("Found .tfignore path: {:?}", root))
+        .inspect(|root| v2!("Found .tfzignore path: {:?}", root))
         .find(|ignore_path| Path::exists(ignore_path));
 
     if let Some(ignore_path) = ignore_path {

@@ -10,10 +10,14 @@ must still be installed and residing within `PATH` environment variable.
 Currently if any of the `.tf` files contain `prevent_destroy = true` for any of
 the resources, `terraform destroy` will fail and there is no flag to force
 `terraform` to skip all resources. This script wrapper helps to alleviate the
-issue by parsing `.tfignore` file in the current working directory, where the
+issue by parsing `.tfzignore` file in the current working directory, where the
 `.tf` files are residing in.
 
-## Example `.tfignore` format
+Previously the ignore file was named `.tfignore` up to `v0.1.1`, however this
+clashes with the Microsoft Team Foundation ignore file naming, so this has been
+changed to `.tfzignore`.
+
+## Example `.tfzignore` format
 
 ```toml
 exact = [
@@ -38,7 +42,7 @@ and install into your Cargo installation binary directory.
 
 ## How to run
 
-With `.tfignore` file in place, simply run `terraform-zap`. You should see
+With `.tfzignore` file in place, simply run `terraform-zap`. You should see
 mainly `terraform destroy` logs in place, but the ignored resources should now
 no longer appear during the confirmation.
 

@@ -16,7 +16,7 @@ pub enum Error {
     #[fail(display = "{}", _0)]
     Io(#[cause] io::Error),
 
-    #[fail(display = "Missing .tfignore file")]
+    #[fail(display = "Missing .tfzignore file")]
     MissingIgnore,
 
     #[fail(display = "{}", _0)]
