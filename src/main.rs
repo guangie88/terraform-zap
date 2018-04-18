@@ -41,7 +41,7 @@ use std::env;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process;
 use structopt::StructOpt;
 use subprocess::{Exec, Redirection};
@@ -51,37 +51,27 @@ use yansi::Paint;
 const TF_CMD: &str = "terraform";
 const TFZIGNORE_FILE: &str = ".tfzignore";
 
-fn find_ignore() -> Result<Ignore> {
-    let roots = {
+fn find_ignore() -> Result<Option<Ignore>> {
+    let ignore_path = {
         let mut cwd = env::current_dir()?;
-
-        let mut roots = vec![];
-        roots.push(cwd.clone());
-
-        while cwd.pop() {
-            roots.push(cwd.clone());
-        }
-
-        roots
+        cwd.push(TFZIGNORE_FILE);
+        cwd
     };
 
-    let ignore_path = roots
-        .into_iter()
-        .map(|mut root| {
-            root.push(PathBuf::from(TFZIGNORE_FILE));
-            root
-        })
-        .find(|ignore_path| Path::exists(ignore_path));
-
-    if let Some(ignore_path) = ignore_path {
+    if Path::exists(&ignore_path) {
         v2!("Found .tfzignore path: {:?}", ignore_path);
 
         let mut content = String::new();
         let mut f = File::open(ignore_path)?;
         f.read_to_string(&mut content)?;
-        Ok(toml::from_str(&content)?)
+        Ok(Some(toml::from_str(&content)?))
     } else {
-        Err(Error::MissingIgnore)?
+        v2!(
+            "{:?} is missing, no filtering is performed...",
+            ignore_path
+        );
+
+        Ok(None)
     }
 }
 
@@ -116,13 +106,21 @@ fn run(config: &Config) -> Result<()> {
     let targets_str = state_capture.stdout_str();
     let targets: Vec<String> = whiteread::parse_string(&targets_str)?;
 
+    // ignore file is allowed to be missing
     let ignore = find_ignore()?;
 
-    let filtered_targets: Vec<String> = match ignore {
-        Ignore::Exact { exact } => targets
-            .into_iter()
-            .filter(|target| !exact.iter().any(|resource| target == resource))
-            .collect(),
+    let filtered_targets: Vec<String> = if let Some(ignore) = ignore {
+        match ignore {
+            Ignore::Exact { exact } => targets
+                .into_iter()
+                .filter(|target| {
+                    !exact.iter().any(|resource| target == resource)
+                })
+                .collect(),
+        }
+    } else {
+        // missing ignore file means no filtering is done
+        targets
     };
 
     let mut target_args = vec![];

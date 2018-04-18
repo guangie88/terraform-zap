@@ -63,6 +63,9 @@ automatically fetch `terraform-zap` CLI application from
 [`crates.io`](https://crates.io/), compile and install into your Cargo
 installation binary directory.
 
+If `terraform-zap` was already installed, run `cargo install -f terraform-zap`
+instead.
+
 ## How to run
 
 With `.tfzignore` file in place, simply run `terraform-zap`. You should see
