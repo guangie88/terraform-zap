@@ -1,6 +1,6 @@
 [package]
 name = "terraform-zap"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Chen Weiguang <chen.weiguang@gmail.com>"]
 description = "Script wrapper to perform finer terraform destroy"
 repository = "https://github.com/guangie88/terraform-zap"
@@ -16,10 +16,11 @@ codecov = { repository = "guangie88/terraform-zap" }
 derive_more = "=0.10.0"
 failure = "=0.1.1"
 is_executable = "=0.1.0"
+itertools = "=0.7.8"
 structopt = "=0.2.7"
 structopt-derive = "=0.2.7"
 subprocess = "=0.1.12"
-terraform-zap-ignore-lib = { path = "ignore-lib", version = "0.3.0" }
+terraform-zap-ignore-lib = { path = "ignore-lib", version = "0.3.1" }
 toml = "=0.4.6"
 which = "=2.0.0"
 whiteread = "=0.4.3"

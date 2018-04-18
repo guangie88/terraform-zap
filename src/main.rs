@@ -1,5 +1,5 @@
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
-#![deny(missing_debug_implementations, warnings)]
+// #![deny(missing_debug_implementations, warnings)]
 
 //! # terraform-zap
 //!
@@ -18,6 +18,7 @@ extern crate derive_more;
 #[macro_use]
 extern crate failure;
 extern crate is_executable;
+extern crate itertools;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
@@ -37,11 +38,13 @@ use arg::Config;
 use error::{Error, Result};
 use failure::Fail;
 use is_executable::IsExecutable;
+use itertools::Itertools;
 use std::env;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::iter;
+use std::path::{Path, PathBuf};
 use std::process;
 use structopt::StructOpt;
 use subprocess::{Exec, Redirection};
@@ -51,9 +54,8 @@ use yansi::Paint;
 const TF_CMD: &str = "terraform";
 const TFZIGNORE_FILE: &str = ".tfzignore";
 
-fn find_ignore() -> Result<Option<Ignore>> {
+fn find_ignore(mut cwd: PathBuf) -> Result<Option<Ignore>> {
     let ignore_path = {
-        let mut cwd = env::current_dir()?;
         cwd.push(TFZIGNORE_FILE);
         cwd
     };
@@ -73,6 +75,15 @@ fn find_ignore() -> Result<Option<Ignore>> {
 
         Ok(None)
     }
+}
+
+fn interleave_targets(targets: &[String]) -> Vec<&str> {
+    let filtered_target_refs = targets.iter().map(|t| t.as_ref());
+
+    iter::repeat("-target")
+        .take(targets.len())
+        .interleave(filtered_target_refs)
+        .collect()
 }
 
 fn run(config: &Config) -> Result<()> {
@@ -107,7 +118,7 @@ fn run(config: &Config) -> Result<()> {
     let targets: Vec<String> = whiteread::parse_string(&targets_str)?;
 
     // ignore file is allowed to be missing
-    let ignore = find_ignore()?;
+    let ignore = find_ignore(env::current_dir()?)?;
 
     let filtered_targets: Vec<String> = if let Some(ignore) = ignore {
         match ignore {
@@ -123,12 +134,7 @@ fn run(config: &Config) -> Result<()> {
         targets
     };
 
-    let mut target_args = vec![];
-
-    for filtered_target in filtered_targets {
-        target_args.push("-target".to_owned());
-        target_args.push(filtered_target)
-    }
+    let target_args = interleave_targets(&filtered_targets);
 
     let destroy_capture = Exec::cmd(&tf_cmd)
         .arg("destroy")
@@ -176,5 +182,225 @@ fn main() {
 
             process::exit(1);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env::temp_dir;
+    use std::fs::{create_dir, remove_dir, remove_file};
+    use std::io::Write;
+
+    struct IgnoreDirSetup {
+        dir: PathBuf,
+        ignore_path: Option<PathBuf>,
+    }
+
+    impl IgnoreDirSetup {
+        fn new(sub_dir: &str, content: Option<&str>) -> IgnoreDirSetup {
+            IgnoreDirSetup::new_with_custom_tmp_dir(
+                temp_dir(),
+                sub_dir,
+                content,
+            )
+        }
+
+        fn new_with_custom_tmp_dir(
+            tmp_dir: PathBuf,
+            sub_dir: &str,
+            content: Option<&str>,
+        ) -> IgnoreDirSetup {
+            let mut dir = tmp_dir;
+            dir.push(sub_dir);
+            create_dir(&dir).unwrap();
+
+            let ignore_path = if let Some(content) = content {
+                let mut ignore_path = dir.clone();
+                ignore_path.push(TFZIGNORE_FILE);
+
+                let mut ignore_file = File::create(&ignore_path).unwrap();
+
+                ignore_file
+                    .write_fmt(format_args!("{}", content))
+                    .unwrap();
+
+                ignore_file.sync_all().unwrap();
+
+                Some(ignore_path)
+            } else {
+                None
+            };
+
+            IgnoreDirSetup {
+                dir,
+                ignore_path,
+            }
+        }
+    }
+
+    impl Drop for IgnoreDirSetup {
+        fn drop(&mut self) {
+            if let Some(ref ignore_path) = self.ignore_path {
+                remove_file(ignore_path).unwrap();
+            }
+
+            if Path::exists(&self.dir) {
+                remove_dir(&self.dir).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn test_find_ignore_valid_1() {
+        const IGNORE_CONTENT: &str = r#"
+            exact = []
+        "#;
+
+        let setup = IgnoreDirSetup::new(
+            "terraform-zap-test_find_ignore_valid_1",
+            Some(IGNORE_CONTENT),
+        );
+
+        let ignore = find_ignore(setup.dir.clone()).unwrap().unwrap();
+
+        match ignore {
+            Ignore::Exact { exact } => {
+                assert!(exact.len() == 0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_find_ignore_valid_2() {
+        const IGNORE_CONTENT: &str = r#"
+            exact = [
+                "a.b",
+                "x.y",
+            ]
+        "#;
+
+        let setup = IgnoreDirSetup::new(
+            "terraform-zap-test_find_ignore_valid_2",
+            Some(IGNORE_CONTENT),
+        );
+
+        let ignore = find_ignore(setup.dir.clone()).unwrap().unwrap();
+
+        match ignore {
+            Ignore::Exact { exact } => {
+                assert!(exact.len() == 2);
+                assert_eq!("a.b", exact[0]);
+                assert_eq!("x.y", exact[1]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_find_ignore_valid_3() {
+        let setup =
+            IgnoreDirSetup::new("terraform-zap-test_find_ignore_valid_3", None);
+
+        let ignore = find_ignore(setup.dir.clone()).unwrap();
+
+        assert!(ignore.is_none());
+    }
+
+    #[test]
+    fn test_find_ignore_valid_4() {
+        const IGNORE_CONTENT: &str = r#"
+            exact = [
+                "a.b",
+                "x.y",
+            ]
+        "#;
+
+        let base_setup = IgnoreDirSetup::new(
+            "terraform-zap-test_find_ignore_valid_4",
+            Some(IGNORE_CONTENT),
+        );
+
+        let actual_setup = IgnoreDirSetup::new_with_custom_tmp_dir(
+            base_setup.dir.clone(),
+            "sub",
+            None,
+        );
+
+        let ignore = find_ignore(actual_setup.dir.clone()).unwrap();
+        assert!(ignore.is_none());
+    }
+
+    #[test]
+    fn test_find_ignore_invalid_1() {
+        const IGNORE_CONTENT: &str = "";
+
+        let setup = IgnoreDirSetup::new(
+            "terraform-zap-test_find_ignore_invalid_1",
+            Some(IGNORE_CONTENT),
+        );
+
+        let ignore = find_ignore(setup.dir.clone());
+        assert!(ignore.is_err());
+    }
+
+    #[test]
+    fn test_find_ignore_invalid_2() {
+        const IGNORE_CONTENT: &str = "[]";
+
+        let setup = IgnoreDirSetup::new(
+            "terraform-zap-test_find_ignore_invalid_2",
+            Some(IGNORE_CONTENT),
+        );
+
+        let ignore = find_ignore(setup.dir.clone());
+        assert!(ignore.is_err());
+    }
+
+    #[test]
+    fn test_find_ignore_invalid_3() {
+        const IGNORE_CONTENT: &str = r#"
+            exact = abc [
+                "a.b",
+            ]
+        "#;
+
+        let setup = IgnoreDirSetup::new(
+            "terraform-zap-test_find_ignore_invalid_3",
+            Some(IGNORE_CONTENT),
+        );
+
+        let ignore = find_ignore(setup.dir.clone());
+        assert!(ignore.is_err());
+    }
+
+    #[test]
+    fn test_target_interleave_1() {
+        let targets = vec![];
+        let reference: [&str; 0] = [];
+
+        assert_eq!(
+            &reference,
+            interleave_targets(&targets).as_slice()
+        );
+    }
+
+    #[test]
+    fn test_target_interleave_2() {
+        let targets = vec!["A".to_owned()];
+
+        assert_eq!(
+            &["-target", "A"],
+            interleave_targets(&targets).as_slice()
+        );
+    }
+
+    #[test]
+    fn test_target_interleave_3() {
+        let targets = vec!["A".to_owned(), "B".to_owned(), "C".to_owned()];
+
+        assert_eq!(
+            &["-target", "A", "-target", "B", "-target", "C"],
+            interleave_targets(&targets).as_slice()
+        );
     }
 }
