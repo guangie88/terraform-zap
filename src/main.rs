@@ -88,6 +88,11 @@ fn find_ignore() -> Result<Ignore> {
 fn run(config: &Config) -> Result<()> {
     vlog::set_verbosity_level(config.verbose as usize);
 
+    // set-up for Windows
+    if cfg!(windows) && !Paint::enable_windows_ascii() {
+        Paint::disable();
+    }
+
     let tf_cmd = if let Some(ref tf_cmd) = config.tf_cmd {
         if !tf_cmd.is_executable() {
             Err(Error::NotExecutable)?
