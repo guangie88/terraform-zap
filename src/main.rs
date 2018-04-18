@@ -71,10 +71,11 @@ fn find_ignore() -> Result<Ignore> {
             root.push(PathBuf::from(TFZIGNORE_FILE));
             root
         })
-        .inspect(|root| v2!("Found .tfzignore path: {:?}", root))
         .find(|ignore_path| Path::exists(ignore_path));
 
     if let Some(ignore_path) = ignore_path {
+        v2!("Found .tfzignore path: {:?}", ignore_path);
+
         let mut content = String::new();
         let mut f = File::open(ignore_path)?;
         f.read_to_string(&mut content)?;
