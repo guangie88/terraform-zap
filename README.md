@@ -76,6 +76,16 @@ If previously there were resources
 with `prevent_destroy = true` set, if these resources are correctly ignored,
 the confirmation prompt should appear properly.
 
+If you need to pass arguments to `terraform destroy` instead, use positional
+arguments, for e.g.
+
+```bash
+terraform-zap -vvv -- -no-color -var "foo=bar"
+```
+
+`-vvv` is passed into `terraform-zap`, while `-no-color`, `-var` and `"foo=bar"`
+are passed into `terraform destroy`.
+
 For more CLI argument details, type `terraform-zap -h`.
 
 ## `terraform zap` instead of `terraform-zap` (for `bash` set-up)

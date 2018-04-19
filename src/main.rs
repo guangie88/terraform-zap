@@ -35,7 +35,7 @@ mod arg;
 mod error;
 
 use arg::Config;
-use error::{Error, Result};
+use error::{CommandErrorCapture, Error, Result};
 use failure::Fail;
 use is_executable::IsExecutable;
 use itertools::Itertools;
@@ -47,12 +47,14 @@ use std::iter;
 use std::path::{Path, PathBuf};
 use std::process;
 use structopt::StructOpt;
-use subprocess::{Exec, Redirection};
+use subprocess::{Exec, ExitStatus, Redirection};
 use terraform_zap_ignore_lib::Ignore;
 use yansi::Paint;
 
 const TF_CMD: &str = "terraform";
 const TFZIGNORE_FILE: &str = ".tfzignore";
+const OTHER_ERROR_EXIT_CODE: i32 = 1;
+const UNDETERMINED_EXIT_CODE: i32 = 2;
 
 fn find_ignore(mut cwd: PathBuf) -> Result<Option<Ignore>> {
     let ignore_path = {
@@ -111,7 +113,10 @@ fn run(config: &Config) -> Result<()> {
         .capture()?;
 
     if !state_capture.exit_status.success() {
-        Err(Error::CommandError(state_capture.stderr_str()))?
+        Err(CommandErrorCapture::new(
+            state_capture.exit_status,
+            state_capture.stderr_str(),
+        ))?
     }
 
     let targets_str = state_capture.stdout_str();
@@ -139,12 +144,14 @@ fn run(config: &Config) -> Result<()> {
     let destroy_capture = Exec::cmd(&tf_cmd)
         .arg("destroy")
         .args(&target_args)
+        .args(&config.pass_args)
         .stdin(Redirection::None)
         .stderr(Redirection::Pipe)
         .capture()?;
 
     if !destroy_capture.exit_status.success() {
-        Err(Error::CommandError(
+        Err(CommandErrorCapture::new(
+            destroy_capture.exit_status,
             destroy_capture.stderr_str(),
         ))?
     }
@@ -157,6 +164,16 @@ where
     T: Display,
 {
     Paint::new(arg).bold()
+}
+
+fn exit_status_to_code(exit_status: &ExitStatus) -> i32 {
+    match *exit_status {
+        // this is not exactly lossy, but will wrap (u32 -> i32)
+        ExitStatus::Exited(code) => code as i32,
+        ExitStatus::Signaled(code) => i32::from(code),
+        ExitStatus::Other(code) => code,
+        ExitStatus::Undetermined => UNDETERMINED_EXIT_CODE,
+    }
 }
 
 fn main() {
@@ -180,7 +197,13 @@ fn main() {
                 ve0!("Backtrace: {}", to_err_color(backtrace));
             }
 
-            process::exit(1);
+            match e {
+                Error::CommandError(ref capture) => {
+                    process::exit(exit_status_to_code(&capture.exit_status))
+                }
+
+                _ => process::exit(OTHER_ERROR_EXIT_CODE),
+            }
         }
     }
 }
@@ -191,6 +214,7 @@ mod tests {
     use std::env::temp_dir;
     use std::fs::{create_dir, remove_dir, remove_file};
     use std::io::Write;
+    use std::{i32, u32, u8};
 
     struct IgnoreDirSetup {
         dir: PathBuf,
@@ -402,5 +426,49 @@ mod tests {
             &["-target", "A", "-target", "B", "-target", "C"],
             interleave_targets(&targets).as_slice()
         );
+    }
+
+    #[test]
+    fn test_exit_status_to_code_1() {
+        let code = exit_status_to_code(&ExitStatus::Exited(u32::MIN));
+        assert_eq!(0, code);
+    }
+
+    #[test]
+    fn test_exit_status_to_code_2() {
+        // overflow wrap
+        let code = exit_status_to_code(&ExitStatus::Exited(u32::MAX));
+        assert_eq!(-1, code);
+    }
+
+    #[test]
+    fn test_exit_status_to_code_3() {
+        // overflow wrap
+        let code = exit_status_to_code(&ExitStatus::Signaled(u8::MIN));
+        assert_eq!(u8::MIN as i32, code);
+    }
+
+    #[test]
+    fn test_exit_status_to_code_4() {
+        let code = exit_status_to_code(&ExitStatus::Signaled(u8::MAX));
+        assert_eq!(u8::MAX as i32, code);
+    }
+
+    #[test]
+    fn test_exit_status_to_code_5() {
+        let code = exit_status_to_code(&ExitStatus::Other(i32::MIN));
+        assert_eq!(i32::MIN, code);
+    }
+
+    #[test]
+    fn test_exit_status_to_code_6() {
+        let code = exit_status_to_code(&ExitStatus::Other(i32::MAX));
+        assert_eq!(i32::MAX, code);
+    }
+
+    #[test]
+    fn test_exit_status_to_code_7() {
+        let code = exit_status_to_code(&ExitStatus::Undetermined);
+        assert_eq!(UNDETERMINED_EXIT_CODE, code);
     }
 }

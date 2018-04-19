@@ -14,7 +14,6 @@ pub struct Config {
     /// Verbose flag (-v, -vv, -vvv)
     pub verbose: u8,
 
-    #[structopt(short = "p", long = "pass")]
     /// Additional arguments to pass to `terraform destroy`
-    pub pass_args: Option<String>,
+    pub pass_args: Vec<String>,
 }
