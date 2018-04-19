@@ -1,6 +1,7 @@
 # `terraform-zap`
 
 [![Build Status](https://travis-ci.org/guangie88/terraform-zap.svg?branch=master)](https://travis-ci.org/guangie88/terraform-zap)
+[![Build status](https://ci.appveyor.com/api/projects/status/19cw3u2t9ak2lktw/branch/master?svg=true)](https://ci.appveyor.com/project/guangie88/terraform-zap/branch/master)
 [![codecov](https://codecov.io/gh/guangie88/terraform-zap/branch/master/graph/badge.svg)](https://codecov.io/gh/guangie88/terraform-zap)
 [![Crates.io](https://img.shields.io/crates/v/terraform-zap.svg)](https://crates.io/crates/terraform-zap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
