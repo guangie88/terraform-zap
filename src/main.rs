@@ -70,10 +70,7 @@ fn find_ignore(mut cwd: PathBuf) -> Result<Option<Ignore>> {
         f.read_to_string(&mut content)?;
         Ok(Some(toml::from_str(&content)?))
     } else {
-        v2!(
-            "{:?} is missing, no filtering is performed...",
-            ignore_path
-        );
+        v2!("{:?} is missing, no filtering is performed...", ignore_path);
 
         Ok(None)
     }
@@ -166,8 +163,8 @@ where
     Paint::new(arg).bold()
 }
 
-fn exit_status_to_code(exit_status: &ExitStatus) -> i32 {
-    match *exit_status {
+fn exit_status_to_code(exit_status: ExitStatus) -> i32 {
+    match exit_status {
         // this is not exactly lossy, but will wrap (u32 -> i32)
         ExitStatus::Exited(code) => code as i32,
         ExitStatus::Signaled(code) => i32::from(code),
@@ -182,10 +179,7 @@ fn main() {
     match run(&config) {
         Ok(_) => v1!("terraform-zap completed!"),
         Err(e) => {
-            ve1!(
-                "{}",
-                Paint::purple("terraform-zap encountered error!")
-            );
+            ve1!("{}", Paint::purple("terraform-zap encountered error!"));
 
             ve0!("{}", to_err_color(&e));
 
@@ -199,7 +193,7 @@ fn main() {
 
             match e {
                 Error::CommandError(ref capture) => {
-                    process::exit(exit_status_to_code(&capture.exit_status))
+                    process::exit(exit_status_to_code(capture.exit_status))
                 }
 
                 _ => process::exit(OTHER_ERROR_EXIT_CODE),
@@ -245,9 +239,7 @@ mod tests {
 
                 let mut ignore_file = File::create(&ignore_path).unwrap();
 
-                ignore_file
-                    .write_fmt(format_args!("{}", content))
-                    .unwrap();
+                ignore_file.write_fmt(format_args!("{}", content)).unwrap();
 
                 ignore_file.sync_all().unwrap();
 
@@ -256,10 +248,7 @@ mod tests {
                 None
             };
 
-            IgnoreDirSetup {
-                dir,
-                ignore_path,
-            }
+            IgnoreDirSetup { dir, ignore_path }
         }
     }
 
@@ -402,20 +391,14 @@ mod tests {
         let targets = vec![];
         let reference: [&str; 0] = [];
 
-        assert_eq!(
-            &reference,
-            interleave_targets(&targets).as_slice()
-        );
+        assert_eq!(&reference, interleave_targets(&targets).as_slice());
     }
 
     #[test]
     fn test_target_interleave_2() {
         let targets = vec!["A".to_owned()];
 
-        assert_eq!(
-            &["-target", "A"],
-            interleave_targets(&targets).as_slice()
-        );
+        assert_eq!(&["-target", "A"], interleave_targets(&targets).as_slice());
     }
 
     #[test]
@@ -430,45 +413,45 @@ mod tests {
 
     #[test]
     fn test_exit_status_to_code_1() {
-        let code = exit_status_to_code(&ExitStatus::Exited(u32::MIN));
+        let code = exit_status_to_code(ExitStatus::Exited(u32::MIN));
         assert_eq!(0, code);
     }
 
     #[test]
     fn test_exit_status_to_code_2() {
         // overflow wrap
-        let code = exit_status_to_code(&ExitStatus::Exited(u32::MAX));
+        let code = exit_status_to_code(ExitStatus::Exited(u32::MAX));
         assert_eq!(-1, code);
     }
 
     #[test]
     fn test_exit_status_to_code_3() {
         // overflow wrap
-        let code = exit_status_to_code(&ExitStatus::Signaled(u8::MIN));
-        assert_eq!(u8::MIN as i32, code);
+        let code = exit_status_to_code(ExitStatus::Signaled(u8::MIN));
+        assert_eq!(i32::from(u8::MIN), code);
     }
 
     #[test]
     fn test_exit_status_to_code_4() {
-        let code = exit_status_to_code(&ExitStatus::Signaled(u8::MAX));
-        assert_eq!(u8::MAX as i32, code);
+        let code = exit_status_to_code(ExitStatus::Signaled(u8::MAX));
+        assert_eq!(i32::from(u8::MAX), code);
     }
 
     #[test]
     fn test_exit_status_to_code_5() {
-        let code = exit_status_to_code(&ExitStatus::Other(i32::MIN));
+        let code = exit_status_to_code(ExitStatus::Other(i32::MIN));
         assert_eq!(i32::MIN, code);
     }
 
     #[test]
     fn test_exit_status_to_code_6() {
-        let code = exit_status_to_code(&ExitStatus::Other(i32::MAX));
+        let code = exit_status_to_code(ExitStatus::Other(i32::MAX));
         assert_eq!(i32::MAX, code);
     }
 
     #[test]
     fn test_exit_status_to_code_7() {
-        let code = exit_status_to_code(&ExitStatus::Undetermined);
+        let code = exit_status_to_code(ExitStatus::Undetermined);
         assert_eq!(UNDETERMINED_EXIT_CODE, code);
     }
 }

@@ -7,8 +7,8 @@ services:
     command:
       - bash
       - '-c'
-      - 'rustfmt --write-mode=diff
+      - 'rustfmt --check 
            src/**.rs 
            ignore-lib/src/**.rs
-         && cargo clippy --all
+         && cargo +nightly clippy --all
          && cargo test --all'
