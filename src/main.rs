@@ -1,5 +1,4 @@
-#![cfg_attr(feature = "cargo-clippy", deny(clippy))]
-// #![deny(missing_debug_implementations, warnings)]
+#![deny(missing_debug_implementations, warnings)]
 
 //! # terraform-zap
 //!
@@ -51,8 +50,10 @@ use subprocess::{Exec, ExitStatus, Redirection};
 use terraform_zap_ignore_lib::Ignore;
 use yansi::Paint;
 
-const TF_CMD: &str = "terraform";
+const TF_ENV: &str = "TF";
+const DEFAULT_TF: &str = "terraform";
 const TFZIGNORE_FILE: &str = ".tfzignore";
+
 const OTHER_ERROR_EXIT_CODE: i32 = 1;
 const UNDETERMINED_EXIT_CODE: i32 = 2;
 
@@ -93,17 +94,24 @@ fn run(config: &Config) -> Result<()> {
         Paint::disable();
     }
 
-    let tf_cmd = if let Some(ref tf_cmd) = config.tf_cmd {
-        if !tf_cmd.is_executable() {
-            Err(Error::NotExecutable)?
-        }
+    // take ownership of string for the only if-branch that requires it
+    let tf_cmd = env::var(TF_ENV).ok();
 
-        tf_cmd.clone()
+    let tf_cmd = if let Some(ref tf_cmd) = tf_cmd {
+        tf_cmd
+    } else if let Some(ref tf_cmd) = config.tf_cmd {
+        tf_cmd
     } else {
-        which::which(TF_CMD)?
+        DEFAULT_TF
     };
 
-    let state_capture = Exec::cmd(&tf_cmd)
+    let tf_path = which::which(tf_cmd)?;
+
+    if !tf_path.is_executable() {
+        Err(Error::NotExecutable)?
+    }
+
+    let state_capture = Exec::cmd(&tf_path)
         .args(&["state", "list"])
         .stdout(Redirection::Pipe)
         .stderr(Redirection::Pipe)
@@ -128,8 +136,7 @@ fn run(config: &Config) -> Result<()> {
                 .into_iter()
                 .filter(|target| {
                     !exact.iter().any(|resource| target == resource)
-                })
-                .collect(),
+                }).collect(),
         }
     } else {
         // missing ignore file means no filtering is done
@@ -138,7 +145,7 @@ fn run(config: &Config) -> Result<()> {
 
     let target_args = interleave_targets(&filtered_targets);
 
-    let destroy_capture = Exec::cmd(&tf_cmd)
+    let destroy_capture = Exec::cmd(&tf_path)
         .arg("destroy")
         .args(&target_args)
         .args(&config.pass_args)

@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "cargo-clippy", deny(clippy))]
 #![deny(missing_debug_implementations, missing_docs, warnings)]
 
 //! # terraform-zap-ignore-lib

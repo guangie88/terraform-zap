@@ -1,17 +1,15 @@
-use std::path::PathBuf;
-
 #[derive(StructOpt, Debug)]
 #[structopt(
     name = "terraform-zap",
     about = "Script wrapper to perform finer terraform destroy."
 )]
 pub struct Config {
-    #[structopt(short = "c", long = "cmdpath", parse(from_os_str))]
-    /// Path to `terraform` command (optional)
-    pub tf_cmd: Option<PathBuf>,
+    /// Path to `terraform` command. Can also use env var TF to override
+    #[structopt(short = "c", long = "cmd")]
+    pub tf_cmd: Option<String>,
 
-    #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
     /// Verbose flag (-v, -vv, -vvv)
+    #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
     pub verbose: u8,
 
     /// Additional arguments to pass to `terraform destroy`

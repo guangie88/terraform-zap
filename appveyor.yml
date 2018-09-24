@@ -1,43 +1,44 @@
 # source: https://github.com/starkat99/appveyor-rust/blob/master/appveyor.yml
 # source: https://github.com/japaric/rust-everywhere/blob/master/appveyor.yml
 
-version: 0.3.3-build{build}
+version: 0.4.0-build{build}
 
 matrix:
   fast_finish: true
 
 environment:
   PROJECT_NAME: terraform-zap
+  global:
+    BINARY_NAME: terraform-zap
+    ARTIFACT_DIR: artifacts
+    CARGO_CONFIG_DIR: .cargo
+    CARGO_CONFIG: .cargo\config
   matrix:
   # Stable channel
-  # - TARGET: i686-pc-windows-gnu
+  # - TARGET: i686-pc-windows-msvc
   #   CHANNEL: stable
-  - TARGET: i686-pc-windows-msvc
-    CHANNEL: stable
-  # - TARGET: x86_64-pc-windows-gnu
+  #   ARTIFACT: true
+  #   ZIP_SUFFIX: windows-x86
+  # - TARGET: x86_64-pc-windows-msvc
   #   CHANNEL: stable
-  - TARGET: x86_64-pc-windows-msvc
-    CHANNEL: stable
+  #   ARTIFACT: true
+  #   ZIP_SUFFIX: windows-x86_64
 
   # Beta channel
-  # - TARGET: i686-pc-windows-gnu
-  #   CHANNEL: beta
   # - TARGET: i686-pc-windows-msvc
-  #   CHANNEL: beta
-  # - TARGET: x86_64-pc-windows-gnu
   #   CHANNEL: beta
   # - TARGET: x86_64-pc-windows-msvc
   #   CHANNEL: beta
     
   # Nightly channel
-  # - TARGET: i686-pc-windows-gnu
-  #   CHANNEL: nightly
-  # - TARGET: i686-pc-windows-msvc
-  #   CHANNEL: nightly
-  # - TARGET: x86_64-pc-windows-gnu
-  #   CHANNEL: nightly
-  # - TARGET: x86_64-pc-windows-msvc
-  #   CHANNEL: nightly
+  - TARGET: i686-pc-windows-msvc
+    CHANNEL: nightly
+    ARTIFACT: true
+    ZIP_SUFFIX: windows-x86
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: nightly
+    ARTIFACT: true
+    ZIP_SUFFIX: windows-x86_64
 
 install:
 - curl -sSf -o rustup-init.exe https://win.rustup.rs
@@ -47,20 +48,44 @@ install:
 - cargo -vV
 - if "%TARGET%"=="i686-pc-windows-gnu"
     cinst mingw --x86 -y &
-    set "PATH=%PATH%;C:\tools\mingw32\bin" &
+    set PATH=%PATH%;C:\tools\mingw32\bin &
     gcc --version
 - if "%TARGET%"=="x86_64-pc-windows-gnu"
     cinst mingw -y &
-    set "PATH=%PATH%;C:\tools\mingw64\bin" &
+    set PATH=%PATH%;C:\tools\mingw64\bin &
     gcc --version
 - echo %PATH%
 
-# `cargo test` takes care of building for us, so disable Appveyor's build stage.
-build: off
+build_script:
+- cargo build --verbose
+
+after_build:
+- if "%ARTIFACT%"=="true" if "%APPVEYOR_REPO_TAG%"=="true"
+    mkdir %CARGO_CONFIG_DIR% &
+    echo [build]>>%CARGO_CONFIG% &
+    echo rustflags = ["-Z", "unstable-options", "-C", "target-feature=+crt-static"]>>%CARGO_CONFIG% &
+    cargo build --release --verbose &
+    mkdir %ARTIFACT_DIR% &
+    pushd %ARTIFACT_DIR% &
+    7z a %BINARY_NAME%-%APPVEYOR_REPO_TAG_NAME%-%ZIP_SUFFIX%.zip "%APPVEYOR_BUILD_FOLDER%\target\release\%BINARY_NAME%.exe" &
+    popd
 
 test_script:
-- cargo build --verbose
 - cargo test --all
+
+artifacts:
+- path: $(ARTIFACT_DIR)\$(BINARY_NAME)-$(APPVEYOR_REPO_TAG_NAME)-$(ZIP_SUFFIX).zip
+  name: zip-release
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: "njCwSow8gtsplARSx0TLiQRB29GHALM67ClkPuE6Z8JbTR6A3k4UKDcUuJE4WK9C"
+  artifacts: zip-release
+  draft: false
+  prerelease: false
+  on:
+    appveyor_repo_tag: true
 
 branches:
   only:

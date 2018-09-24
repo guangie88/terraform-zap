@@ -10,5 +10,5 @@ services:
       - 'rustfmt --check 
            src/**.rs 
            ignore-lib/src/**.rs
-         && cargo +nightly clippy --all
+         && cargo clippy --all
          && cargo test --all'
