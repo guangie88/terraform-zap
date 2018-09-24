@@ -57,17 +57,23 @@ script:
 
 after_success:
 - |
-  if [ "$PUBLISH" = "true" ] && [ -n "$TRAVIS_TAG" ]; then
+  if [ "$PUBLISH" = "true" ]; then
     # publish when this is a new tag
     cargo login "$CRATES_TOKEN"
 
+    if [ -n "$TRAVIS_TAG" ]; then
+      CARGO_PUBLISH_FLAGS=
+    else
+      CARGO_PUBLISH_FLAGS="--dry-run --verbose"
+    fi
+
     # publish all self dependency libraries first
     cd ignore-lib
-    cargo publish
+    cargo publish ${CARGO_PUBLISH_FLAGS}
     cd ..
     
     # then publish binary
-    cargo publish
+    cargo publish ${CARGO_PUBLISH_FLAGS}
   elif [ "$ARTIFACT" = "true" ] && [ -n "$TRAVIS_TAG" ]; then
     # upload binary artifact when this is a new tag
     # this needs to be jq processed to extract out the `id` value
