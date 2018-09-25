@@ -18,9 +18,8 @@ extern crate derive_more;
 extern crate failure;
 extern crate is_executable;
 extern crate itertools;
-extern crate structopt;
 #[macro_use]
-extern crate structopt_derive;
+extern crate structopt;
 extern crate subprocess;
 extern crate terraform_zap_ignore_lib;
 extern crate toml;
