@@ -289,7 +289,6 @@ dependencies = [
  "is_executable 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "structopt-derive 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "subprocess 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "terraform-zap-ignore-lib 0.4.0",
  "toml 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
