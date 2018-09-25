@@ -19,7 +19,7 @@ BIN_DIR=/usr/local/bin
 
 # unzip cannot work on Unix pipe
 echo "Downloading '"$ZIP_FILE"'..."
-curl -sSfLO "https://github.com/guangie88/terraform-zap/releases/download/$LATEST_TAG/$ZIP_FILE"
+curl -sSfLO "https://github.com/guangie88/$REPO_USERNAME/releases/download/$LATEST_TAG/$ZIP_FILE"
 
 echo "Unzipping..."
 unzip -qq "$ZIP_FILE" 
@@ -29,4 +29,4 @@ echo "Moving binary file '"$BINARY_FILE"' to $BIN_DIR/..."
 mv $BINARY_FILE $BIN_DIR/
 chmod +x $BIN_DIR/$BINARY_FILE
 
-echo "DONE!\n\nterraform-zap requires terraform, be sure to place terraform in PATH.\n"
+echo "DONE!\n\${BINARY_FILE} requires terraform, be sure to place terraform in PATH.\n"
